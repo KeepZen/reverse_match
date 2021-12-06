@@ -1,12 +1,14 @@
 defmodule ReverseMatch do
   @moduledoc """
   Suport reverse match to help to write more clear code.
+
+  Read [more](https://github.com/KeepZen/reverse_match).
   """
 
   @doc """
   transefome value to `new_form` or do `more`
 
-  ## Example of  `tr(value to: form)`
+  ## Example of  `tr(value, to: form)`
   `tr` transform the `value` to new `new_form`,
   we the value of `value`, and the variables in
   the `new_form` binded.
