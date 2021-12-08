@@ -4,11 +4,11 @@ defmodule M.MixProject do
   def project do
     [
       app: :reverse_match,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       licenses: "MIT",
-      description: "Reverse match for compose with |>",
+      description: "functions and macros to write long `|>` flow.",
       package: package(),
       deps: deps()
     ]
