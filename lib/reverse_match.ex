@@ -17,68 +17,67 @@ defmodule ReverseMatch do
   This is snipe from the [Task and gen_tcp](https://elixir-lang.org/getting-started/mix-otp/task-and-gen-tcp.html).
   Why the last line do not use `|>`? Because `write_line/2` do not
   return socket, and `serve/1` want it.
-  For me, the flow is broken.
+  The pipele is broken.
 
-  In the pipeline flow, if the function do not return the match value,
-  the flow will be broken.
-  With the help of `tr`, we can transform the the flowed value to
-  what the next function required.
+  In the pipeline, if the upstream function return value is not the
+  downstream function's first required, the pipeline will be broken.
+  With the help of `tr`, we can transform the value from the upstream to
+  what the next function required, like this:
   ```
   import ReverseMatch
   defp server(socket) do
     socket
     |> read_line()
     |> write_line(socket)
-    |> tr(to: _, do: socket)
+    |> tr(_, do: socket)
     |> server
   end
   ```
   """
 
   @doc """
-  transform value to `new_form` or do `more`.
+  Transform the `value` to `new_form`.
 
-  `opts` required have a `:to`.
-
-  `to: new_form` use to transform to `new_form`,
-  after the `:to` we can add a `do: more` to do more thing.
-
-  ## Example of  `tr(value, to: new_form)`
-  `tr` transform the `value` to new `new_form`,
-  return  `value`, and the variables in
-  the `new_form` are binded.
+  Just as `tr(value, new_form)` same as `new_form = value`.
+  ## Examples tr(value,new_from)
   ```
-      import ReverseMatch
-      tr({a: 1, b: 2}, to: {a: a, b: _})
-      a #=> 1
+  iex>import ReverseMatch
+  iex>ab = [a: 1, b: 2]
+  iex>tr(ab, [a: a, b: _])
+  iex>a
+  1
   ```
 
-  ## Example of tr(value, to: new_form, do: more)
-  After binded variables in `new_form`, do `more` work use the varaibles.
-  The return is the value of `more`.
-  ```
-  import ReverseMatch
-  Agent.start_link(fn ->10 end))
-  |> tr(to: {:ok,pid}, do: pid) # now pid flow downside.
-  |> Agent.get(&(&1))
+  After binding variables in `new_form`, we can do more wrok in the `do_block`,
+  and the the variables in the `new_from` at the same scope as this `do_block`.
 
-  # pid is a varibale, after the pipeline, we can stil use it.
-  Agent.stop(pid)
+  ## Examples tr(value,new_form, do: more)
   ```
+  iex>import ReverseMatch
+  iex>Agent.start_link(fn ->10 end) |>
+  iex> tr({:ok,pid}, do: pid) |>
+  iex> Agent.get(&(&1))
+  10
+  iex>Agent.stop(pid)
+  :ok
+  ```
+  ## Returns
+  If there is `do_more` block, the value of the `do_more` will return,
+  else the `vlaue` return.
   """
-  @spec tr(value :: term, opts :: keyword) :: term
-  defmacro tr(value, opts)
+  defmacro tr(value, new_form, do_more \\ nil) do
+    match_ast =
+      quote do
+        unquote(new_form) = unquote(value)
+      end
 
-  defmacro tr(value, to: new_form) do
-    quote do
-      unquote(new_form) = unquote(value)
-    end
-  end
-
-  defmacro tr(value, to: new_form, do: more) do
-    quote do
-      unquote(new_form) = unquote(value)
-      unquote(more)
+    if do_more != nil do
+      quote do
+        unquote(match_ast)
+        unquote(do_more[:do])
+      end
+    else
+      match_ast
     end
   end
 
